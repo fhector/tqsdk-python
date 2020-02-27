@@ -37,47 +37,43 @@ def run_tianqin_code(port):
     except Exception as e:
         api.close()
 
-class WebBacktestTest(unittest.TestCase):
 
+class WebBacktestTest(unittest.TestCase):
     def setUp(self):
         ctx = mp.get_context('spawn')
         self.port = "8082"
-        self.tq_process = ctx.Process(target=run_tianqin_code, args=(self.port, ))
+        self.tq_process = ctx.Process(target=run_tianqin_code, args=(self.port,))
         self.tq_process.start()
+
 
     def tearDown(self):
         self.tq_process.terminate()
 
-    def test_web_firefox(self):
-        if sys.platform.startswith("win"):
-            exe_path = os.path.join(os.getenv("GeckoWebDriver"), "geckodriver.exe")
-            driver = webdriver.Firefox(executable_path=exe_path)
-        elif sys.platform.startswith("linux"):
-            exe_path = os.path.join(os.getcwd(), "geckodriver")
-            opts = FirefoxOptions()
-            opts.headless = True
-            driver = webdriver.Firefox(executable_path=exe_path, options=opts)
-        else:
-            return
-        run_for_driver(driver, self)
 
-    def test_web_chrome(self):
-        if sys.platform.startswith("win"):
-            exe_path = os.path.join(os.getenv("ChromeWebDriver"), "chromedriver.exe")
-            driver = webdriver.Chrome(executable_path=exe_path)
-        elif sys.platform.startswith("linux"):
-            exe_path = os.path.join(os.getcwd(), "chromedriver")
-            opts = ChromeOptions()
-            opts.headless = True
-            driver = webdriver.Chrome(executable_path=exe_path, options=opts)
-        elif sys.platform.startswith("darwin"):
-            exe_path = os.path.join(os.getcwd(), "chromedriver")
-            opts = ChromeOptions()
-            opts.headless = True
-            driver = webdriver.Chrome(executable_path=exe_path)
-        else:
-            return
-        run_for_driver(driver, self)
+    @unittest.skipIf(not sys.platform.startswith("win"), "test on win")
+    def test_on_win(self):
+        geckodriver_path = os.path.join(os.getenv("GeckoWebDriver"), "geckodriver.exe")
+        run_for_driver(webdriver.Firefox(executable_path=geckodriver_path), self)
+        chromedriver_path = os.path.join(os.getenv("ChromeWebDriver"), "chromedriver.exe")
+        run_for_driver(webdriver.Chrome(executable_path=chromedriver_path), self)
+
+
+    @unittest.skipIf(not sys.platform.startswith("linux"), "test on linux")
+    def test_on_linux(self):
+        opts = FirefoxOptions()
+        opts.headless = True
+        firefox_driver = webdriver.Firefox(executable_path=os.getenv("GECKOWEBDRIVER"), options=opts)
+        run_for_driver(firefox_driver, self)
+        opts = ChromeOptions()
+        opts.headless = True
+        chrome_driver = webdriver.Chrome(executable_path=os.getenv("CHROMEWEBDRIVER"), options=opts)
+        run_for_driver(chrome_driver, self)
+
+
+    @unittest.skipIf(not sys.platform.startswith("darwin"), "test on macos")
+    def test_on_macos(self):
+        run_for_driver(webdriver.Firefox(), self)
+        run_for_driver(webdriver.Chrome(), self)
 
 
 def run_for_driver(driver, test):
